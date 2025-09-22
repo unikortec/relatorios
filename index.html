@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Relatórios — Serra Nobre V3.2.8</title>
+  <link rel="manifest" href="manifest.json" />
+
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- SheetJS p/ XLSX (global: XLSX) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF p/ PDF do relatório (global: window.jspdf.jsPDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <a href="../pedidos/index.html">← Voltar</a>
+    <h1>Relatórios — Serra Nobre V3.2.8</h1>
+    <div style="margin-left:auto"></div>
+  </header>
+
+  <main id="app">
+    <section class="card">
+      <div class="filters">
+        <div><label>Data entrega — de</label><input type="date" id="fDataIni"></div>
+        <div><label>Data entrega — até</label><input type="date" id="fDataFim"></div>
+        <div><label>Horário — de</label><input type="time" id="fHoraIni"></div>
+        <div><label>Horário — até</label><input type="time" id="fHoraFim"></div>
+        <div><label>Cliente (contém)</label><input type="text" id="fCliente" placeholder="ex.: mercado"></div>
+        <div>
+          <label>Tipo (Entrega/Retirada)</label>
+          <select id="fTipo">
+            <option value="">Todos</option>
+            <option value="ENTREGA">ENTREGA</option>
+            <option value="RETIRADA">RETIRADA</option>
+          </select>
+        </div>
+        <div>
+          <label>Formato</label>
+          <select id="fModo">
+            <option value="reduzido">Reduzido</option>
+            <option value="detalhado">Detalhado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="btnBuscar">Buscar</button>
+        <button class="btn ghost" id="btnLimpar">Limpar</button>
+        <button class="btn warning" id="btnXLSX" title="Exportar resultados para XLSX"><span class="lbl">Exportar XLSX</span></button>
+        <button class="btn gray" id="btnPDF" title="Gerar PDF"><span class="lbl">Gerar PDF</span></button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Hora</th>
+              <th>Cliente (clique para editar)</th>
+              <th>Itens</th>
+              <th>Total (R$)</th>
+              <th>Tipo</th>
+              <th>Pagamento</th>
+              <th>Nº do Cupom</th>
+              <th>Cancelar</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" id="ftCount">0 pedidos</td>
+              <td id="ftTotal">R$ 0,00</td>
+              <td colspan="4"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal de Edição -->
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <header><h2 id="modalTitle">Editar Pedido</h2></header>
+
+      <div class="grid">
+        <div><label>ID do Pedido</label><input type="text" id="mId" readonly /></div>
+        <div><label>Cliente</label><input type="text" id="mCliente" /></div>
+        <div><label>Data Entrega (ISO)</label><input type="date" id="mDataEntregaISO" /></div>
+        <div><label>Hora Entrega</label><input type="time" id="mHoraEntrega" /></div>
+        <div><label>Tipo</label>
+          <select id="mTipo"><option value="ENTREGA">ENTREGA</option><option value="RETIRADA">RETIRADA</option></select>
+        </div>
+        <div><label>Pagamento</label><input type="text" id="mPagamento" placeholder="ex.: PIX, DINHEIRO, CRÉDITO" /></div>
+        <div class="span-2"><label>Nº do Cupom Fiscal</label><input type="text" id="mCupomFiscal" placeholder="ex.: 123456-1/001" /></div>
+        <div class="span-4"><label>Observações</label><input type="text" id="mObs" placeholder="(opcional)" /></div>
+      </div>
+
+      <div class="muted">Itens do pedido</div>
+      <table class="items-table" id="itemsTable">
+        <thead><tr>
+          <th style="width:36%">Descrição</th>
+          <th style="width:12%">Qtd</th>
+          <th style="width:12%">Un</th>
+          <th style="width:16%">Preço Unit. (R$)</th>
+          <th style="width:16%">Subtotal (R$)</th>
+          <th style="width:8%">Remover</th>
+        </tr></thead>
+        <tbody id="itemsBody"></tbody>
+        <tfoot><tr><td colspan="6"><button class="btn ghost" id="btnAddItem" type="button">+ Adicionar item</button></td></tr></tfoot>
+      </table>
+
+      <div class="grid">
+        <div class="span-3"></div>
+        <div><label>Total do Pedido (R$)</label><input class="right" type="text" id="mTotal" readonly /></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn gray" id="btnFecharModal" type="button">Cancelar</button>
+        <button class="btn" id="btnSalvar" type="button">Salvar alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase e App (módulos locais) -->
+  <script type="module" src="js/app.js"></script>
+
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+          document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update(); });
+          setInterval(() => reg.update(), 10 * 60 * 1000);
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            nw && nw.addEventListener('statechange', () => {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) reg.waiting?.postMessage('SKIP_WAITING');
+            });
+          });
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!window.__reloadedBySW) { window.__reloadedBySW = true; location.reload(); }
+          });
+        } catch {}
+      });
+    }
+  </script>
+</body>
+</html>
