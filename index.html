@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Relatórios — Serra Nobre V3.2.8</title>
+  <title>Relatórios — UNIKOR</title>
   <link rel="manifest" href="manifest.json" />
 
+  <!-- Estilos unificados com “Pedidos” -->
   <link rel="stylesheet" href="css/style.css" />
 
   <!-- SheetJS p/ XLSX (global: XLSX) -->
@@ -14,11 +15,24 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-  <header>
-    <a href="../pedidos/index.html">← Voltar</a>
-    <h1>Relatórios — Serra Nobre V3.2.8</h1>
-    <div style="margin-left:auto"></div>
-  </header>
+  <!-- Barra verde (mesma do Pedidos) -->
+  <div class="brandbar">
+    <div class="brandbar__left">
+      <!-- usa o MESMO nome/arquivo do Pedidos -->
+      <img src="./unikorbranco-logo.svg" alt="UNIKOR" class="brandbar__logo" />
+    </div>
+
+    <div class="brandbar__right">
+      <div class="brandbar__user">
+        <span class="brandbar__user-label">USUÁRIO</span>
+      </div>
+
+      <!-- botão para voltar ao módulo Pedidos -->
+      <a class="brandbar__btn" href="../pedidos/index.html" title="Voltar para Pedidos">Pedidos</a>
+
+      <div class="brandbar__title">RELATÓRIOS V1.0.1</div>
+    </div>
+  </div>
 
   <main id="app">
     <section class="card">
@@ -127,7 +141,7 @@
   <!-- Firebase e App (módulos locais) -->
   <script type="module" src="js/app.js"></script>
 
-  <!-- Service Worker -->
+  <!-- Service Worker (igual Pedidos) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
