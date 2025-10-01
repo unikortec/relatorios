@@ -3,36 +3,82 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Relatórios — UNIKOR</title>
+  <title>Relatórios — Serra Nobre V3.2.8</title>
   <link rel="manifest" href="manifest.json" />
+  <style>
+    :root{
+      --teal:#0f766e; --teal-600:#0ea5a6; --ink:#0f172a; --muted:#64748b; --bg:#f1f5f9; --line:#e2e8f0;
+      --danger:#dc2626; --gray:#475569;
+    }
+    *{box-sizing:border-box}
+    body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu; background:var(--bg); color:var(--ink) }
+    header{ display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--teal); color:#fff }
+    header a{ color:#fff; text-decoration:none }
+    header h1{ margin:0; font-size:18px }
+    main{ max-width:1200px; margin:16px auto; padding:0 12px 40px }
+    .card{ background:#fff; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,.06); padding:14px }
+    .filters{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:10px }
+    label{ font-size:12px; color:#334155; display:block; margin-bottom:4px }
+    input, select, button{ font:inherit }
+    input, select{ width:100%; padding:8px; border:1px solid var(--line); border-radius:8px; outline:0; background:#fff }
 
-  <!-- Estilos unificados com “Pedidos” -->
-  <link rel="stylesheet" href="css/style.css" />
+    .actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap }
+    .btn{ border:1px solid var(--teal-600); background:var(--teal-600); color:#fff; padding:8px 12px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:8px }
+    .btn.ghost{ background:#fff; color:var(--teal-600) }
+    .btn.warning{ background:#0b5; border-color:#0b5 }
+    .btn.gray{ background:var(--gray); border-color:var(--gray) }
+    .btn.danger{ background:var(--danger); border-color:var(--danger) }
+    .btn.icon{ padding:4px 8px; line-height:1; font-weight:700; }
 
-  <!-- SheetJS p/ XLSX (global: XLSX) -->
+    .btn[disabled]{ opacity:.75; cursor:default }
+    .spinner{ width:14px; height:14px; border:2px solid #ffffff80; border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+
+    .table-wrap{ margin-top:14px; overflow:auto; border-radius:10px; border:1px solid var(--line) }
+    table{ width:100%; min-width:1120px; border-collapse:collapse; background:#fff; table-layout: fixed }
+    thead th{ position:sticky; top:0; background:#f8fafc; border-bottom:1px solid var(--line); text-align:left; font-size:12px; color:#334155; padding:10px }
+    thead th:nth-child(1){width:110px}
+    thead th:nth-child(2){width:90px}
+    thead th:nth-child(3){width:260px}
+    thead th:nth-child(4){width:70px}
+    thead th:nth-child(5){width:120px}
+    thead th:nth-child(6){width:120px}
+    thead th:nth-child(7){width:150px}
+    thead th:nth-child(8){width:150px}
+    thead th:nth-child(9){width:100px}
+    tbody td{ border-bottom:1px solid #f1f5f9; padding:10px; font-size:14px; vertical-align:top; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+    tbody td.wrap{ white-space:normal }
+    tfoot td{ background:#f8fafc; font-weight:600; padding:10px; border-top:1px solid var(--line) }
+    .muted{ color:var(--muted); font-size:12px }
+    .cell-client{ color:#0f766e; cursor:pointer; text-decoration:underline }
+    .right{ text-align:right }
+
+    @media (max-width: 980px){ .filters{grid-template-columns:repeat(3,minmax(0,1fr))} }
+    @media (max-width: 560px){ .filters{grid-template-columns:repeat(2,minmax(0,1fr))} }
+
+    .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:16px; z-index:9999 }
+    .modal{ width:min(100%, 980px); max-height:90vh; overflow:auto; background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.25); padding:16px; }
+    .modal header{ background:transparent; color:var(--ink); padding:0; margin-bottom:10px }
+    .modal h2{ margin:0; font-size:18px }
+    .modal .grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:10px }
+    .modal .grid .span-2{ grid-column: span 2; }
+    .modal .grid .span-3{ grid-column: span 3; }
+    .modal .grid .span-4{ grid-column: span 4; }
+    .items-table{ width:100%; border-collapse:collapse; margin-top:8px; }
+    .items-table th,.items-table td{ border:1px solid var(--line); padding:8px; font-size:13px; text-align:left }
+    .modal .actions{ justify-content:flex-end }
+  </style>
+
+  <!-- SheetJS e jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
-  <!-- jsPDF p/ PDF do relatório (global: window.jspdf.jsPDF) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-  <!-- Barra verde (mesma do Pedidos) -->
-  <div class="brandbar">
-    <div class="brandbar__left">
-      <!-- usa o MESMO nome/arquivo do Pedidos -->
-      <img src="./unikorbranco-logo.svg" alt="UNIKOR" class="brandbar__logo" />
-    </div>
-
-    <div class="brandbar__right">
-      <div class="brandbar__user">
-        <span class="brandbar__user-label">USUÁRIO</span>
-      </div>
-
-      <!-- botão para voltar ao módulo Pedidos -->
-      <a class="brandbar__btn" href="../pedidos/index.html" title="Voltar para Pedidos">Pedidos</a>
-
-      <div class="brandbar__title">RELATÓRIOS V1.0.1</div>
-    </div>
-  </div>
+  <header>
+    <a href="index.html">← Voltar</a>
+    <h1>Relatórios — Serra Nobre V3.2.8</h1>
+    <div style="margin-left:auto"></div>
+  </header>
 
   <main id="app">
     <section class="card">
@@ -138,10 +184,365 @@
     </div>
   </div>
 
-  <!-- Firebase e App (módulos locais) -->
-  <script type="module" src="js/app.js"></script>
+  <!-- App (módulo) -->
+  <script type="module">
+    import { onAuthUser } from "./js/firebase.js";
+    import { pedidos_list, pedidos_get, pedidos_update, pedidos_delete } from "./js/db.js";
 
-  <!-- Service Worker (igual Pedidos) -->
+    const $ = (id)=>document.getElementById(id);
+    const moneyBR = (n)=> (Number(n||0)).toFixed(2).replace(".", ",");
+    const toBR = (iso)=> { if(!iso) return ""; const [y,m,d] = iso.split("-"); return `${d}/${m}/${y}`; };
+    function parseMoney(str){
+      if (typeof str === "number") return str;
+      const s = (str||"").toString().trim().replace(/\./g,"").replace(",","");
+      const v = Number(s)/100; // aceita "1234" => 12,34
+      return isNaN(v) ? 0 : v;
+    }
+    function setLoading(btn, isLoading, labelWhenIdle){
+      if (!btn) return;
+      const lbl = btn.querySelector(".lbl");
+      if (isLoading){
+        btn.setAttribute("disabled","true");
+        if (lbl) lbl.textContent = labelWhenIdle || lbl.textContent || "Processando…";
+        const sp = document.createElement("span"); sp.className = "spinner"; sp.setAttribute("data-spin","1");
+        btn.prepend(sp);
+      }else{
+        btn.removeAttribute("disabled");
+        const sp = btn.querySelector(".spinner[data-spin]"); if (sp) sp.remove();
+      }
+    }
+    const nextFrame = () => new Promise(r => setTimeout(r, 0));
+
+    window.__rows = [];
+    let __currentDocId = null;
+
+    function renderRows(docs){
+      const tbody = $("tbody");
+      const seen  = new Set();
+      const rows  = [];
+      let total   = 0;
+
+      for (const r of docs){
+        if (seen.has(r.id)) continue;
+        seen.add(r.id);
+
+        const itens = Array.isArray(r.itens) ? r.itens : [];
+        const tot = Number(r.totalPedido||0); total += tot;
+        const tipoTxt = ((r?.entrega?.tipo || "").toUpperCase()==="RETIRADA" ? "RETIRADA" : "ENTREGA");
+        const cupom = (r.cupomFiscal && String(r.cupomFiscal).trim()) ? r.cupomFiscal : "-";
+
+        rows.push(`
+          <tr data-rowid="${r.id}">
+            <td>${toBR(r.dataEntregaISO)||""}</td>
+            <td>${r.horaEntrega||""}</td>
+            <td class="cell-client" data-id="${r.id}" title="Clique para editar">${(r.cliente||"")}</td>
+            <td>${itens.length}</td>
+            <td>R$ ${moneyBR(tot)}</td>
+            <td>${tipoTxt}</td>
+            <td>${r.pagamento||""}</td>
+            <td>${cupom}</td>
+            <td><button class="btn danger icon btn-cancel" data-id="${r.id}" title="Cancelar / excluir pedido">×</button></td>
+          </tr>
+        `);
+      }
+
+      if (!rows.length){
+        tbody.innerHTML = `<tr><td colspan="9">Sem resultados.</td></tr>`;
+        $("ftCount").textContent = "0 pedidos";
+        $("ftTotal").textContent = "R$ 0,00";
+        return;
+      }
+
+      tbody.innerHTML = rows.join("");
+      $("ftCount").textContent = `${seen.size} pedido(s)`;
+      $("ftTotal").textContent = `R$ ${moneyBR(total)}`;
+    }
+
+    async function buscar(){
+      const di = $("fDataIni").value || null;
+      const df = $("fDataFim").value || null;
+      const cliente = $("fCliente").value.trim();
+      const tipoSel = $("fTipo").value.trim() || null;
+
+      const list = await pedidos_list({
+        dataIniISO: di || undefined,
+        dataFimISO: df || undefined,
+        clienteLike: cliente || undefined,
+        tipo: tipoSel || undefined,
+        max: 1000
+      });
+
+      // filtros de hora — aplicados client-side
+      const hIni = $("fHoraIni").value || null;
+      const hFim = $("fHoraFim").value || null;
+
+      const out = list.filter(x => {
+        if (hIni && (x.horaEntrega||"") < hIni) return false;
+        if (hFim && (x.horaEntrega||"") > hFim) return false;
+        return true;
+      });
+
+      window.__rows = out;
+      renderRows(out);
+    }
+
+    function openModal(){ const m = $("modalBackdrop"); m.style.display="flex"; m.setAttribute("aria-hidden","false"); }
+    function closeModal(){ const m = $("modalBackdrop"); m.style.display="none"; m.setAttribute("aria-hidden","true"); __currentDocId = null; $("itemsBody").innerHTML = ""; }
+
+    function recalcTotal(){
+      let total = 0;
+      const rows = $("itemsBody").querySelectorAll("tr");
+      rows.forEach(tr=>{
+        const qtd = parseFloat(tr.querySelector(".it-qtd").value || "0");
+        const pu  = parseMoney(tr.querySelector(".it-preco").value);
+        const sub = qtd * pu;
+        tr.querySelector(".it-sub").textContent = moneyBR(sub);
+        total += sub;
+      });
+      $("mTotal").value = moneyBR(total);
+    }
+
+    function addItemRow(item = {}){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input type="text" class="it-desc" value="${(item.descricao||item.produto||"").toString().replace(/"/g,"&quot;")}" /></td>
+        <td><input type="number" min="0" step="0.001" class="it-qtd" value="${Number(item.qtd||item.quantidade||0)}" /></td>
+        <td><input type="text" class="it-un" value="${(item.un||item.tipo||"UN").toString().replace(/"/g,"&quot;")}" /></td>
+        <td><input type="text" class="it-preco" value="${moneyBR(item.precoUnit||item.preco||0)}" /></td>
+        <td class="it-sub right">R$ 0,00</td>
+        <td class="right"><button class="btn danger btn-rem" type="button">X</button></td>
+      `;
+      $("itemsBody").appendChild(tr);
+      const inputs = tr.querySelectorAll(".it-qtd,.it-preco");
+      inputs.forEach(i=> i.addEventListener("input", recalcTotal));
+      tr.querySelector(".btn-rem").addEventListener("click", ()=>{ tr.remove(); recalcTotal(); });
+      recalcTotal();
+    }
+
+    async function carregarPedidoEmModal(id){
+      __currentDocId = id;
+      const r = await pedidos_get(id);
+      if (!r){ alert("Pedido não encontrado."); return; }
+
+      $("mId").value = r.id || "";
+      $("mCliente").value = r.cliente || "";
+      $("mDataEntregaISO").value = r.dataEntregaISO || "";
+      $("mHoraEntrega").value = r.horaEntrega || "";
+      $("mTipo").value = ((r?.entrega?.tipo||"").toUpperCase()==="RETIRADA" ? "RETIRADA" : "ENTREGA");
+      $("mPagamento").value = r.pagamento || "";
+      $("mCupomFiscal").value = r.cupomFiscal || "";
+      $("mObs").value = r.obs || r.observacoes || "";
+
+      $("itemsBody").innerHTML = "";
+      const itens = Array.isArray(r.itens) ? r.itens : [];
+      if (itens.length){ itens.forEach(it => addItemRow(it)); } else { addItemRow({}); }
+      recalcTotal();
+      openModal();
+    }
+
+    async function salvarEdicao(){
+      if (!__currentDocId){ closeModal(); return; }
+
+      const itens = [];
+      $("itemsBody").querySelectorAll("tr").forEach(tr=>{
+        const desc = tr.querySelector(".it-desc").value.trim();
+        const qtd  = parseFloat(tr.querySelector(".it-qtd").value || "0");
+        const un   = (tr.querySelector(".it-un").value || "UN").trim().toUpperCase();
+        const pu   = parseMoney(tr.querySelector(".it-preco").value);
+        if (!desc && qtd<=0) return;
+        itens.push({
+          descricao: desc,
+          qtd,
+          un,
+          precoUnit: pu,
+          subtotal: Number((qtd*pu).toFixed(2))
+        });
+      });
+      const totalPedido = itens.reduce((acc, it)=> acc + (it.subtotal||0), 0);
+
+      const payload = {
+        cliente: $("mCliente").value.trim(),
+        dataEntregaISO: $("mDataEntregaISO").value || null,
+        horaEntrega: $("mHoraEntrega").value || "",
+        entrega: { tipo: $("mTipo").value || "ENTREGA" },
+        pagamento: $("mPagamento").value.trim() || "",
+        cupomFiscal: $("mCupomFiscal").value.trim() || "",
+        obs: $("mObs").value.trim() || "",
+        itens,
+        totalPedido: Number(totalPedido.toFixed(2)),
+      };
+
+      try{
+        await pedidos_update(__currentDocId, payload);
+        closeModal();
+        const idx = window.__rows.findIndex(x=>x.id===__currentDocId);
+        if (idx>=0){ window.__rows[idx] = { ...window.__rows[idx], ...payload }; }
+        renderRows(window.__rows);
+        alert("Pedido atualizado com sucesso.");
+      }catch(e){
+        console.error(e);
+        alert("Falha ao salvar. Verifique conexão e permissões.");
+      }
+    }
+
+    async function excluirPedido(id){
+      if (!id) return;
+      const ok = confirm("Gostaria de excluir o pedido?");
+      if (!ok) return;
+      try{
+        await pedidos_delete(id);
+        window.__rows = window.__rows.filter(x => x.id !== id);
+        renderRows(window.__rows);
+        alert("Pedido excluído.");
+      }catch(e){
+        console.error(e); alert("Não foi possível excluir. Verifique conexão/permissões.");
+      }
+    }
+
+    async function exportarXLSX(){
+      if (!window.__rows.length){ alert("Nada para exportar."); return; }
+      const btn = $("btnXLSX");
+      setLoading(btn, true, "Exportar XLSX");
+      try{
+        const modo = $("fModo").value || "reduzido";
+        const data = window.__rows.map(r=>{
+          const base = {
+            "Data": toBR(r.dataEntregaISO||""),
+            "Hora": r.horaEntrega||"",
+            "Cliente": r.cliente||"",
+            "Itens": Array.isArray(r.itens)? r.itens.length : 0,
+            "Total (R$)": Number(r.totalPedido||0),
+            "Tipo": (r?.entrega?.tipo||"").toUpperCase()==="RETIRADA" ? "RETIRADA" : "ENTREGA",
+            "Pagamento": r.pagamento||"",
+            "Cupom": (r.cupomFiscal && String(r.cupomFiscal).trim()) ? r.cupomFiscal : "-",
+            "ID": r.id
+          };
+          if (modo==="detalhado"){
+            const itensTxt = (Array.isArray(r.itens)? r.itens : [])
+              .map(i => `${i.produto||i.descricao||""} • ${i.quantidade||i.qtd||0} ${i.tipo||i.un||"un"} x ${i.precoUnit||i.preco||0}`).join(" | ");
+            return { ...base, "Itens (detalhe)": itensTxt };
+          }
+          return base;
+        });
+
+        if (!data.length){ alert("Nada para exportar."); return; }
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+
+        await nextFrame();
+        const nome = `Relatorio_${new Date().toISOString().slice(0,10)}.xlsx`;
+        XLSX.writeFile(wb, nome);
+      } finally {
+        setLoading(btn, false, "Exportar XLSX");
+      }
+    }
+
+    async function exportarPDF(){
+      if (!window.__rows.length){ alert("Nada para gerar."); return; }
+      const btn = $("btnPDF");
+      setLoading(btn, true, "Gerar PDF");
+      try{
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
+
+        const modo = $("fModo").value || "reduzido";
+        const left=10, top=12, lineH=7, maxW = 277;
+        let y = top;
+
+        doc.setFont("helvetica","bold"); doc.setFontSize(14);
+        doc.text("Relatórios — Serra Nobre", left, y); y += 6;
+        doc.setFontSize(9); doc.setFont("helvetica","normal");
+        doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, left, y); y += 6;
+
+        doc.setFont("helvetica","bold");
+        const headers = ["Data","Hora","Cliente","Itens","Total (R$)","Tipo","Pagamento","Cupom"];
+        const colsW   = [20,16,70,14,26,24,40,55];
+        let x = left;
+        headers.forEach((h,i)=>{ doc.text(h, x, y); x += colsW[i]; });
+        y += 3;
+        doc.setLineWidth(.2); doc.line(left, y, left+colsW.reduce((a,b)=>a+b,0), y); y += 4;
+        doc.setFont("helvetica","normal");
+
+        for (const r of window.__rows){
+          x = left;
+          const row = [
+            toBR(r.dataEntregaISO||""), r.horaEntrega||"", r.cliente||"",
+            (Array.isArray(r.itens)? r.itens.length : 0).toString(),
+            moneyBR(r.totalPedido||0),
+            ((r?.entrega?.tipo||"").toUpperCase()==="RETIRADA"?"RETIRADA":"ENTREGA"),
+            r.pagamento||"", (r.cupomFiscal && String(r.cupomFiscal).trim()) ? r.cupomFiscal : "-"
+          ];
+
+          const clienteLines = doc.splitTextToSize(row[2], colsW[2]-2);
+          const cupomLines   = doc.splitTextToSize(row[7], colsW[7]-2);
+          const lines = Math.max(1, clienteLines.length, cupomLines.length);
+          const h = lines*lineH;
+
+          if (y + h > 200){ doc.addPage(); y = top; }
+
+          const cells = [row[0], row[1], clienteLines, row[3], row[4], row[5], row[6], cupomLines];
+          for (let i=0;i<cells.length;i++){
+            const val = cells[i];
+            if (Array.isArray(val)){
+              val.forEach((ln,k)=> doc.text(ln, x, y + (k+1)*lineH - 2));
+            } else {
+              doc.text(String(val), x, y + lineH - 2);
+            }
+            x += colsW[i];
+          }
+          y += h;
+
+          if (modo==="detalhado" && Array.isArray(r.itens) && r.itens.length){
+            const itemsTxt = r.itens.map(it=>`• ${(it.produto||it.descricao||"")} — ${(it.quantidade||it.qtd||0)} ${(it.tipo||it.un||"")} x ${moneyBR(it.precoUnit||it.preco||0)} = ${moneyBR(it.total||it.subtotal||0)}`).join("\n");
+            const itemsLines = doc.splitTextToSize(itemsTxt, maxW);
+            itemsLines.forEach((ln)=>{ if (y>200){ doc.addPage(); y=top; } doc.text(ln, left+6, y); y += 5; });
+            y += 2;
+          }
+        }
+
+        const total = window.__rows.reduce((s,r)=> s + Number(r.totalPedido||0), 0);
+        doc.setFont("helvetica","bold"); doc.setFontSize(11);
+        if (y>190){ doc.addPage(); y=top; }
+        doc.text(`TOTAL: R$ ${moneyBR(total)}`, left, y+6);
+
+        await nextFrame();
+        doc.save(`Relatorio_${new Date().toISOString().slice(0,10)}.pdf`);
+      } finally {
+        setLoading(btn, false, "Gerar PDF");
+      }
+    }
+
+    // Eventos
+    $("btnBuscar").onclick = buscar;
+    $("btnLimpar").onclick = ()=>{
+      ["fDataIni","fDataFim","fHoraIni","fHoraFim","fCliente"].forEach(id=>$(id).value="");
+      $("fTipo").value = ""; $("tbody").innerHTML = "";
+      $("ftCount").textContent = "0 pedidos"; $("ftTotal").textContent = "R$ 0,00"; window.__rows = [];
+    };
+    $("btnXLSX").onclick = exportarXLSX;
+    $("btnPDF").onclick  = exportarPDF;
+
+    $("tbody").addEventListener("click", (ev)=>{
+      const tdEdit = ev.target.closest(".cell-client");
+      if (tdEdit){ const id = tdEdit.getAttribute("data-id"); if (id) carregarPedidoEmModal(id); return; }
+      const btnCancel = ev.target.closest(".btn-cancel");
+      if (btnCancel){ const id = btnCancel.getAttribute("data-id"); excluirPedido(id); }
+    });
+
+    $("btnFecharModal").addEventListener("click", closeModal);
+    $("btnAddItem").addEventListener("click", ()=> addItemRow({}));
+    $("btnSalvar").addEventListener("click", salvarEdicao);
+
+    // Habilita UI após login do portal
+    onAuthUser((user, claims) => {
+      // você pode, se quiser, auto-carregar:
+      // if (user && claims?.tenantId) buscar();
+    });
+  </script>
+
+  <!-- Service Worker (opcional manter como já estava) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
@@ -150,15 +551,16 @@
           document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update(); });
           setInterval(() => reg.update(), 10 * 60 * 1000);
           reg.addEventListener('updatefound', () => {
-            const nw = reg.installing;
-            nw && nw.addEventListener('statechange', () => {
-              if (nw.state === 'installed' && navigator.serviceWorker.controller) reg.waiting?.postMessage('SKIP_WAITING');
+            const newSW = reg.installing;
+            if (!newSW) return;
+            newSW.addEventListener('statechange', () => {
+              if (newSW.state === 'installed' && navigator.serviceWorker.controller) reg.waiting?.postMessage('SKIP_WAITING');
             });
           });
           navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (!window.__reloadedBySW) { window.__reloadedBySW = true; location.reload(); }
           });
-        } catch {}
+        } catch (e) {}
       });
     }
   </script>
