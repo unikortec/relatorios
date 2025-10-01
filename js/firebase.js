@@ -1,7 +1,6 @@
-// js/firebase.js
-// Versão compatível com Firebase 12.2.1, seguindo o padrão do Unikor.
-// Este módulo NÃO realiza signIn; ele apenas aguarda o login do app-mãe.
-// Reexporta os helpers do Firestore no mesmo estilo.
+// relatorios/js/firebase.js
+// Compatível com Firebase 12.2.1. Reaproveita o login do app-mãe (Unikor).
+// NÃO faz signIn aqui; apenas aguarda onAuthStateChanged e expõe claims (tenantId/role).
 
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, getIdTokenResult } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
@@ -11,8 +10,7 @@ import {
   query, where, orderBy, limit, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-// =================== CONFIG ===================
-// Mesmas credenciais do app-mãe Unikor (você já usa isso no portal).
+// === CONFIG (mesmas chaves do Unikor) ===
 export const firebaseConfig = {
   apiKey:            "AIzaSyC12s4PvUWtNxOlShPc7zXlzq4XWqlVo2w",
   authDomain:        "unikorapp.firebaseapp.com",
@@ -22,18 +20,15 @@ export const firebaseConfig = {
   appId:             "1:329806123621:web:9aeff2f5947cd106cf2c8c",
 };
 
-// =================== INIT ===================
+// === INIT ===
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export { app };
 export const auth = getAuth(app);
 export const db   = getFirestore(app);
 
-// =================== AUTH STATE BUS ===================
-// Mesma ideia do Unikor: bus com subscribe + esperadores de login.
-// Além disso, expomos helper para ler custom claims (role, tenantId).
-
+// === AUTH STATE + CLAIMS BUS ===
 let currentUser = null;
-let currentClaims = null; // { role, tenantId, ... }
+let currentClaims = null;
 const subs = new Set();
 const pendingLoginWaiters = new Set();
 
@@ -46,10 +41,10 @@ onAuthStateChanged(auth, async (user) => {
       const tok = await getIdTokenResult(currentUser, /*forceRefresh*/ true);
       currentClaims = tok?.claims || null;
     }
-  } catch (_) { /* ignora */ }
+  } catch (_) {}
 
   console.log(
-    "[Firebase Auth] ",
+    "[Relatórios/Auth]",
     currentUser
       ? `Logado: ${currentUser.email || currentUser.uid} — claims: ${JSON.stringify(currentClaims || {})}`
       : "Não logado"
@@ -63,7 +58,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// =================== HELPERS ===================
 export function onAuthUser(cb) {
   if (typeof cb === 'function') {
     subs.add(cb);
@@ -73,25 +67,25 @@ export function onAuthUser(cb) {
   return () => {};
 }
 
-export function getCurrentUser() { return currentUser; }
+export function getCurrentUser()   { return currentUser; }
 export function getCurrentClaims() { return currentClaims; }
-export function isLoggedIn() { return !!currentUser; }
+export function isLoggedIn()       { return !!currentUser; }
 
 export function waitForLogin() {
   if (currentUser) return Promise.resolve({ user: currentUser, claims: currentClaims });
   return new Promise((resolve) => pendingLoginWaiters.add(resolve));
 }
 
-/** Retorna { tenantId, role } somente após login. Lança erro se ausentes. */
+/** Garante tenantId/role nos claims antes de prosseguir. */
 export async function requireTenantContext() {
   const { user, claims } = (currentUser ? { user: currentUser, claims: currentClaims } : await waitForLogin());
   const tenantId = claims?.tenantId || "";
   const role = claims?.role || "";
-  if (!tenantId) throw new Error("Sem tenantId nos claims. Verifique se o usuário do portal possui tenantId.");
+  if (!tenantId) throw new Error("Sem tenantId nos claims. Verifique provisionamento do usuário no portal.");
   return { user, tenantId, role };
 }
 
-// Reexport Firestore helpers (mesmo padrão do Unikor para facilitar importações)
+// Reexports para conveniência (mesmo padrão Unikor)
 export {
   collection, doc, addDoc, setDoc, getDoc, getDocs,
   query, where, orderBy, limit, serverTimestamp
